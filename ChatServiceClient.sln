@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChatServiceClientLibrary", "ChatServiceClientLibrary\ChatServiceClientLibrary.csproj", "{C768EC1D-B158-4293-AF41-6EABC010FD14}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChatServiceConsoleClient", "ChatServiceConsoleClient\ChatServiceConsoleClient.csproj", "{7F12B54D-058A-4D16-8499-825EC8DCB915}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChatServiceGTKClient", "ChatServiceGTKClient\ChatServiceGTKClient.csproj", "{86AD419D-9DAD-41DF-BBBD-C9F74BBFFD58}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C768EC1D-B158-4293-AF41-6EABC010FD14}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C768EC1D-B158-4293-AF41-6EABC010FD14}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C768EC1D-B158-4293-AF41-6EABC010FD14}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C768EC1D-B158-4293-AF41-6EABC010FD14}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7F12B54D-058A-4D16-8499-825EC8DCB915}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7F12B54D-058A-4D16-8499-825EC8DCB915}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7F12B54D-058A-4D16-8499-825EC8DCB915}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7F12B54D-058A-4D16-8499-825EC8DCB915}.Release|Any CPU.Build.0 = Release|Any CPU
+		{86AD419D-9DAD-41DF-BBBD-C9F74BBFFD58}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{86AD419D-9DAD-41DF-BBBD-C9F74BBFFD58}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{86AD419D-9DAD-41DF-BBBD-C9F74BBFFD58}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{86AD419D-9DAD-41DF-BBBD-C9F74BBFFD58}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

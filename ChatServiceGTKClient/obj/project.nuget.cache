@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "dgSpecHash": "zN4mGUUs6gvD/9rBSRE44Hvn7xIKJ13MnFAHiWQnOoYQr/cZs6/yJWlQ2PT9dFqrdNWTDp336zYCQdzP/yQ1+w==",
+  "success": true,
+  "projectFilePath": "/media/copokbl/Big Boi/Documents/Coding/C#/ChatServiceClient/ChatServiceGTKClient/ChatServiceGTKClient.csproj",
+  "expectedPackageFiles": [
+    "/home/copokbl/.nuget/packages/atksharp/3.24.24.38/atksharp.3.24.24.38.nupkg.sha512",
+    "/home/copokbl/.nuget/packages/cairosharp/3.24.24.38/cairosharp.3.24.24.38.nupkg.sha512",
+    "/home/copokbl/.nuget/packages/gdksharp/3.24.24.38/gdksharp.3.24.24.38.nupkg.sha512",
+    "/home/copokbl/.nuget/packages/generalpurposelib/1.1.2/generalpurposelib.1.1.2.nupkg.sha512",
+    "/home/copokbl/.nuget/packages/giosharp/3.24.24.38/giosharp.3.24.24.38.nupkg.sha512",
+    "/home/copokbl/.nuget/packages/glibsharp/3.24.24.38/glibsharp.3.24.24.38.nupkg.sha512",
+    "/home/copokbl/.nuget/packages/gtksharp/3.24.24.38/gtksharp.3.24.24.38.nupkg.sha512",
+    "/home/copokbl/.nuget/packages/pangosharp/3.24.24.38/pangosharp.3.24.24.38.nupkg.sha512"
+  ],
+  "logs": []
+}

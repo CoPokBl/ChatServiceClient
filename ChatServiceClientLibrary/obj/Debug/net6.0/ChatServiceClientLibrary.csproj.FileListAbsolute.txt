@@ -1,7 +1,6 @@
 /media/copokbl/Big Boi/Documents/Coding/C#/ChatServiceClient/ChatServiceClientLibrary/bin/Debug/net6.0/ChatServiceClientLibrary.deps.json
 /media/copokbl/Big Boi/Documents/Coding/C#/ChatServiceClient/ChatServiceClientLibrary/bin/Debug/net6.0/ChatServiceClientLibrary.dll
 /media/copokbl/Big Boi/Documents/Coding/C#/ChatServiceClient/ChatServiceClientLibrary/bin/Debug/net6.0/ref/ChatServiceClientLibrary.dll
-/media/copokbl/Big Boi/Documents/Coding/C#/ChatServiceClient/ChatServiceClientLibrary/bin/Debug/net6.0/ChatServiceClientLibrary.pdb
 /media/copokbl/Big Boi/Documents/Coding/C#/ChatServiceClient/ChatServiceClientLibrary/obj/Debug/net6.0/ChatServiceClientLibrary.csproj.AssemblyReference.cache
 /media/copokbl/Big Boi/Documents/Coding/C#/ChatServiceClient/ChatServiceClientLibrary/obj/Debug/net6.0/ChatServiceClientLibrary.GeneratedMSBuildEditorConfig.editorconfig
 /media/copokbl/Big Boi/Documents/Coding/C#/ChatServiceClient/ChatServiceClientLibrary/obj/Debug/net6.0/ChatServiceClientLibrary.AssemblyInfoInputs.cache
@@ -9,4 +8,5 @@
 /media/copokbl/Big Boi/Documents/Coding/C#/ChatServiceClient/ChatServiceClientLibrary/obj/Debug/net6.0/ChatServiceClientLibrary.csproj.CoreCompileInputs.cache
 /media/copokbl/Big Boi/Documents/Coding/C#/ChatServiceClient/ChatServiceClientLibrary/obj/Debug/net6.0/ChatServiceClientLibrary.dll
 /media/copokbl/Big Boi/Documents/Coding/C#/ChatServiceClient/ChatServiceClientLibrary/obj/Debug/net6.0/ref/ChatServiceClientLibrary.dll
+/media/copokbl/Big Boi/Documents/Coding/C#/ChatServiceClient/ChatServiceClientLibrary/bin/Debug/net6.0/ChatServiceClientLibrary.pdb
 /media/copokbl/Big Boi/Documents/Coding/C#/ChatServiceClient/ChatServiceClientLibrary/obj/Debug/net6.0/ChatServiceClientLibrary.pdb

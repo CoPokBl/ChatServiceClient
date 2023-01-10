@@ -10,6 +10,7 @@
     <ItemGroup>
       <PackageReference Include="GeneralPurposeLib" Version="1.1.2" />
       <PackageReference Include="GtkSharp" Version="3.24.24.38" />
+      <PackageReference Include="GtkSharp.Dependencies" Version="1.1.1" />
     </ItemGroup>
 
     <ItemGroup>

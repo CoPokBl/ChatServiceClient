@@ -9,24 +9,27 @@ namespace ChatServiceGTKClient;
 
 internal class MainWindow : Window {
 
-    private const string TitleStart = "Chat Client";
-    private const string CheckMark = "<span foreground=\"green\" style=\"italic\" size=\"larger\">✓</span>";
-    private const string DefaultMainServer = "https://chatservice.zaneharrison.com";  // This is an alias of Serble's server that is unblocked at all tested schools
-    private const string DefaultLiveUpdateServer = "chatservice.zaneharrison.com:9435";  // This is an alias of Serble's server that is unblocked at all tested schools
+    private const string TitleStart                 = "Chat Client";
+    private const string CheckMark                  = "<span foreground=\"green\" style=\"italic\" size=\"larger\">✓</span>";
+    private const string DefaultMainServer          = "https://chatservice.zaneharrison.com";  // This is an alias of Serble's server that is unblocked at all tested schools
+    private const string DefaultLiveUpdateServer    = "chatservice.zaneharrison.com:9435";  // This is an alias of Serble's server that is unblocked at all tested schools
+    private const int    MaxMessagesLoaded          = 20;
+    private const int    InitialLoadedMessageLimit  = 20;
+    private const int    MessageMillisecondCooldown = 500;
 
     // NAMES CANNOT BE CHANGED BECAUSE THEY ARE USED BY GTK TO FIND THE OBJECTS
     // ReSharper disable InconsistentNaming
-    [UI] private readonly Entry serverIPEntry = null!;
-    [UI] private readonly Entry liveUpdateIPEntry = null!;
-    [UI] private readonly Entry channelNameEntry = null!;
-    [UI] private readonly Entry usernameEntry = null!;
-    [UI] private readonly Button connectButton = null!;
-    [UI] private readonly Box messagesBox = null!;
-    [UI] private readonly Box onlineUsersBox = null!;
-    [UI] private readonly Entry messageEntry = null!;
-    [UI] private readonly Button sendButton = null!;
-    [UI] private readonly Menu messageContextMenu = null!;
-    [UI] private readonly Menu userContextMenu = null!;
+    [UI] private readonly Entry  serverIPEntry      = null!;
+    [UI] private readonly Entry  liveUpdateIPEntry  = null!;
+    [UI] private readonly Entry  channelNameEntry   = null!;
+    [UI] private readonly Entry  usernameEntry      = null!;
+    [UI] private readonly Button connectButton      = null!;
+    [UI] private readonly Box    messagesBox        = null!;
+    [UI] private readonly Box    onlineUsersBox     = null!;
+    [UI] private readonly Entry  messageEntry       = null!;
+    [UI] private readonly Button sendButton         = null!;
+    [UI] private readonly Menu   messageContextMenu = null!;
+    [UI] private readonly Menu   userContextMenu    = null!;
     // ReSharper restore InconsistentNaming
 
     private ChatClient? _client;
@@ -96,33 +99,47 @@ internal class MainWindow : Window {
 
     private Message GetMessageFromId(string id) => _messages.Find(m => m.MessageId == id)!;
 
+    private readonly object _sendMessageLock = new();
+    private DateTime _lastMsgSent = DateTime.MinValue;
     private void SendMessagePressed() {
-        if (!_connected) return;
-        Console.WriteLine("Sending message...");
+        lock (_sendMessageLock) {
+            if (!_connected) return;
 
-        async void Start() {
-            string message = Commands.Emoticons(messageEntry.Text);
-            Message msgObj = await _client!.SendMessage(message);
-            string id = msgObj.MessageId;
-            Console.WriteLine("Message sent with id: " + id);
-            messageEntry.Text = "";
+            if (_lastMsgSent > DateTime.Now.AddMilliseconds(-MessageMillisecondCooldown)) {
+                // Cooldown
+                sendButton.Label = "Wait...";
+                return;
+            }
+            
+            Console.WriteLine("Sending message...");
+            sendButton.Label = "Send";
+            _lastMsgSent = DateTime.Now;
 
-            Message lastMessage = (_messages.Count > 0 ? _messages[^1] : null)!;
-            Application.Invoke(delegate {
-                CreateMessageLabel(lastMessage, _client.Username, message, DateTime.FromBinary(msgObj.CreatedAt), id, true, true);
+            async void Start() {
+                string message = Commands.Emoticons(messageEntry.Text);
+                Message msgObj = await _client!.SendMessage(message);
+                string id = msgObj.MessageId;
+                Console.WriteLine("Message sent with id: " + id);
+                messageEntry.Text = "";
 
-                new Thread(() => {
-                    Thread.Sleep(100);
-                    Application.Invoke(delegate { ScrollToBottom(); });
-                }).Start();
-            });
+                Message lastMessage = (_messages.Count > 0 ? _messages[^1] : null)!;
+                Application.Invoke(delegate {
+                    CreateMessageLabel(lastMessage, _client.Username, message, DateTime.FromBinary(msgObj.CreatedAt), id, true, true);
+
+                    new Thread(() => {
+                        Thread.Sleep(100);
+                        Application.Invoke(delegate { ScrollToBottom(); });
+                    }).Start();
+                });
+            }
+
+            new Thread(Start).Start();
         }
-
-        new Thread(Start).Start();
     }
     
     private void ConnectPressed(object? sender, EventArgs e) {
         connectButton.Label = "Connecting...";
+        connectButton.Sensitive = false;
 
         _greyMessages.Clear();
         _messages.Clear();
@@ -225,12 +242,20 @@ internal class MainWindow : Window {
 
             box.Add(label);
             messagesBox.Add(box);
+
+            if (messagesBox.Children.Length > MaxMessagesLoaded) {
+                Widget first = messagesBox.Children[0];
+                messagesBox.Remove(first);
+                first.Destroy();
+                Console.WriteLine("Removed message");
+            }
         
             box.Show();
             label.Show();
         }
     }
 
+    private readonly object _eventLock = new();
     private async void Init() {
         if (_client != null) {
             await _client.Disconnect();
@@ -241,7 +266,7 @@ internal class MainWindow : Window {
         if (string.IsNullOrEmpty(ip)) {
             ip = DefaultMainServer;
         }
-            
+        
         string liveUpdateIp = liveUpdateIPEntry.Text;
         if (string.IsNullOrEmpty(liveUpdateIp)) {
             liveUpdateIp = DefaultLiveUpdateServer;
@@ -281,20 +306,21 @@ internal class MainWindow : Window {
             connectButton.Label = "Connection Failed.";
             messageEntry.Sensitive = false;  // These need to be here for when user reconnects but it fails
             sendButton.Sensitive = false;
+            connectButton.Sensitive = true;
             return;
         }
 
         connectButton.Label = "Reconnect";
         messageEntry.Sensitive = true;
         sendButton.Sensitive = true;
-        
+
         _connected = true;
         Console.WriteLine("Connected!");
 
         Window.Title = TitleStart + " - " + _client.Channel;
         
         // Get existing messages
-        Message[] existingMessages = await _client.GetMessages();
+        Message[] existingMessages = await _client.GetMessages(InitialLoadedMessageLimit);
         Message? prevMsg = null;
         foreach (Message message in existingMessages) {
             CreateMessageLabel(
@@ -318,49 +344,57 @@ internal class MainWindow : Window {
         }
 
         _client.OnMessageReceived += message => {
-            Message lastMessage = (_messages.Count > 0 ? _messages[^1] : null)!;
-            bool isTrusted = _client.TrustedUsers.IsMessageFromTrustedUser(message) || message.WasSentByClient(_client);
-            Console.WriteLine(
-                $"Message Received From {message.CreatorName} with ID {message.MessageId} (Trusted: {isTrusted}, IsMe: {message.WasSentByClient(_client)}): " + 
-                message.Text);
-            _messages.Add(message);
+            lock (_eventLock) {
+                Message lastMessage = (_messages.Count > 0 ? _messages[^1] : null)!;
+                bool isTrusted = _client.TrustedUsers.IsMessageFromTrustedUser(message) || message.WasSentByClient(_client);
+                Console.WriteLine(
+                    $"Message Received From {message.CreatorName} with ID {message.MessageId} (Trusted: {isTrusted}, IsMe: {message.WasSentByClient(_client)}): " + 
+                    message.Text);
+                _messages.Add(message);
             
-            if (message.WasSentByClient(_client)) {
-                // try to find the message in greyMessages and make that have full opacity
-                if (_greyMessages.TryGetValue(message.MessageId, out Widget? label)) {
-                    Console.WriteLine("Found grey message with id: " + message.MessageId);
-                    label.Opacity = 1d;
-                    Label label2 = (Label)label;
+                if (message.WasSentByClient(_client)) {
+                    // try to find the message in greyMessages and make that have full opacity
+                    if (_greyMessages.TryGetValue(message.MessageId, out Widget? label)) {
+                        Console.WriteLine("Found grey message with id: " + message.MessageId);
+                        label.Opacity = 1d;
+                        Label label2 = (Label)label;
 
-                    if (label.MarginTop == 10)
-                        label2.LabelMarkup = label2.LabelMarkup.Insert(8 + _client.Username.Length, 
-                            CheckMark + " ");
+                        if (label.MarginTop == 10)
+                            label2.LabelMarkup = label2.LabelMarkup.Insert(8 + _client.Username.Length, 
+                                CheckMark + " ");
 
-                    _greyMessages.Remove(message.MessageId);
-                    return;
+                        _greyMessages.Remove(message.MessageId);
+                        return;
+                    }
                 }
-            }
             
-            CreateMessageLabel(lastMessage, message.CreatorName, message.Text, 
-                DateTime.FromBinary(message.CreatedAt).ToLocalTime(), message.MessageId, isTrusted);
+                CreateMessageLabel(lastMessage, message.CreatorName, message.Text, 
+                    DateTime.FromBinary(message.CreatedAt).ToLocalTime(), message.MessageId, isTrusted);
+            }
         };
         
         _client.OnUserOnline += user => {
-            Console.WriteLine($"User Online: {user.Username}");
-            _onlineUsers.Add(user);
-            if (user.Username == _client.Username && user.PublicKey == _client.PublicKey) {
-                Console.WriteLine("I went online!");
-                return;
+            lock (_eventLock) {
+                Console.WriteLine($"User Online: {user.Username}");
+                _onlineUsers.Add(user);
+                if (user.Username == _client.Username && user.PublicKey == _client.PublicKey) {
+                    Console.WriteLine("I went online!");
+                    return;
+                }
+                CreateOnlineUserLabel(user);
             }
-            CreateOnlineUserLabel(user);
         };
         
         _client.OnUserOffline += user => {
-            Console.WriteLine($"User Offline: {user.Username}");
-            _onlineUsers.Remove(user);
-            if (user.Username == _client.Username && user.PublicKey == _client.PublicKey) return;
-            DeleteOnlineUserLabel(user);
+            lock (_eventLock) {
+                Console.WriteLine($"User Offline: {user.Username}");
+                _onlineUsers.Remove(user);
+                if (user.Username == _client.Username && user.PublicKey == _client.PublicKey) return;
+                DeleteOnlineUserLabel(user);
+            }
         };
+        
+        connectButton.Sensitive = true;
         
     }
     

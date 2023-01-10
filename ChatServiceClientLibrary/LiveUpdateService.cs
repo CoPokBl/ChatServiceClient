@@ -1,10 +1,13 @@
 using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
+using System;
 
 namespace ChatServiceClientLibrary; 
 
 internal static class LiveUpdateService {
+
+    public static CancellationTokenSource CancellationTokenSource = new();
 
     public static void Start(object? invoker) {
         if (invoker is not ChatClient invokerClient) {
@@ -13,9 +16,15 @@ internal static class LiveUpdateService {
 
         invokerClient.Config.LogFunction("[Live Update Service] Starting...");
 
-        while (true) {
-            ConnectInstance(invokerClient);
+        while (!CancellationTokenSource.IsCancellationRequested) {
+            try {
+                ConnectInstance(invokerClient);
+            }
+            catch (Exception e) {
+                invokerClient.Config.LogFunction($"[Live Update Service] {e}");
+            }
         }
+        invokerClient.Config.LogFunction($"[Live Update Service] Exiting...");
     }
 
     private static void ConnectInstance(ChatClient invokerClient) {
@@ -25,7 +34,22 @@ internal static class LiveUpdateService {
         NetworkStream stream = client.GetStream();
         invokerClient.Config.LogFunction("[Live Update Service] Connected to server");
         
-        while (true) {
+        CancellationTokenSource.Token.Register(() => {
+            try {
+                client.Close();
+            }
+            catch (Exception) {
+                invokerClient.Config.LogFunction("[Live Update Service] Failed to close client");
+            }
+            try {
+                stream.Close();
+            }
+            catch (Exception) {
+                invokerClient.Config.LogFunction("[Live Update Service] Failed to close client");
+            }
+        });
+        
+        while (!CancellationTokenSource.IsCancellationRequested) {
             string serverMsg;
             try {
                 invokerClient.Config.LogFunction("[Live Update Service] Waiting for server message...");
@@ -33,6 +57,9 @@ internal static class LiveUpdateService {
             }
             catch (Exception) {
                 invokerClient.Config.LogFunction("[Live Update Service] An error occured while receiving a message from the server. Retrying...");
+                continue;
+            }
+            if (CancellationTokenSource.IsCancellationRequested) {
                 continue;
             }
             invokerClient.Config.LogFunction.Invoke("[Live Update Server] " + serverMsg);
@@ -132,12 +159,16 @@ internal static class LiveUpdateService {
                 return;
             }
         }
+        client.Close();
     }
 
     private static string ReceiveMessage(Stream stream) {
         // Read until we get a newline
         StringBuilder cmdBuilder = new();
         while (true) {
+            if (CancellationTokenSource.IsCancellationRequested) {
+                throw new TaskCanceledException();
+            }
             int b = stream.ReadByte();
             if (b == -1) {
                 break;
@@ -151,11 +182,11 @@ internal static class LiveUpdateService {
         return cmdBuilder.ToString().Replace("\\n", "\n");
     }
 
-    private static void SendMessage(Socket socket, string data) {
+    private static async void SendMessage(Socket socket, string data) {
         // Escape the newline character
         data = data.Replace("\n", "\\n");
         // Send the data
-        socket.Send(Encoding.UTF8.GetBytes(data + "\n"));
+        await socket.SendAsync(Encoding.UTF8.GetBytes(data + "\n"), SocketFlags.None, CancellationTokenSource.Token);
     }
     
 }

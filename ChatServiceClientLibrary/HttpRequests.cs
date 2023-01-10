@@ -10,12 +10,12 @@ internal static class HttpRequests {
         HttpClient client = new();
         string json = JsonSerializer.Serialize(msg);
         HttpResponseMessage response = 
-            await client.PostAsync($"http://{chatClient.Config.ServerUrl}/channel/{chatClient.Channel}", new StringContent(json));
+            await client.PostAsync($"{chatClient.Config.ServerUrl}/channel/{chatClient.Channel}", new StringContent(json));
         response.EnsureSuccessStatusCode();
         string responseBody = await response.Content.ReadAsStringAsync();
         JsonDocument doc = JsonDocument.Parse(responseBody);
         JsonElement root = doc.RootElement;
-        if (root.TryGetProperty("Error", out JsonElement error)) {
+        if (root.ValueKind == JsonValueKind.Object && root.TryGetProperty("Error", out JsonElement error)) {
             throw new Exception(error.GetString());
         }
         
@@ -28,7 +28,7 @@ internal static class HttpRequests {
         // Send POST request to the server
         HttpClient client = new();
         HttpResponseMessage response = 
-            await client.GetAsync($"http://{chatClient.Config.ServerUrl}/channel/{chatClient.Channel}?limit={limit}&offset={offset}");
+            await client.GetAsync($"{chatClient.Config.ServerUrl}/channel/{chatClient.Channel}?limit={limit}&offset={offset}");
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<Message[]>())!;
     }
@@ -37,7 +37,7 @@ internal static class HttpRequests {
         // Send POST request to the server
         HttpClient client = new();
         HttpResponseMessage response = 
-            await client.GetAsync($"http://{chatClient.Config.ServerUrl}/online");
+            await client.GetAsync($"{chatClient.Config.ServerUrl}/online/{chatClient.Channel}");
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<User[]>())!;
     }

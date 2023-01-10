@@ -17,7 +17,7 @@ public class ChatClient {
         Config = config;
         
         // Remove http:// and https:// from urls
-        Config.ServerUrl = Config.ServerUrl.Replace("http://", "").Replace("https://", "");
+        // Config.ServerUrl = Config.ServerUrl.Replace("http://", "").Replace("https://", "");
         Config.LiveUpdateUrl = Config.LiveUpdateUrl.Replace("http://", "").Replace("https://", "");
         
         Channel = channel;
@@ -40,12 +40,39 @@ public class ChatClient {
         if (Config.EnableLiveUpdates) {
             await Config.LogFunction("[Chat Client] Starting live update thread");
             _liveUpdateThread = new Thread(LiveUpdateService.Start);
+            LiveUpdateService.CancellationTokenSource = new CancellationTokenSource();
             _liveUpdateThread.Start(this);
         }
         else {
             await Config.LogFunction("[Chat Client] Live update thread has been disabled");
         }
         _isConnected = true;
+    }
+
+    public async Task Disconnect() {
+        await Config.LogFunction("[Chat Client] Attempting disconnect...");
+        if (Config.EnableLiveUpdates && _liveUpdateThread != null) {
+            try {
+                //_liveUpdateThread.Interrupt();
+                LiveUpdateService.CancellationTokenSource.Cancel();
+            }
+            catch (Exception e) {
+                await Config.LogFunction("[Chat Client] Failed to interrupt live update thread");
+                await Config.LogFunction($"[Chat Client] {e}");
+            }
+
+            if (_liveUpdateThread.IsAlive) {
+                bool success = _liveUpdateThread.Join(TimeSpan.FromSeconds(5));
+                if (!success) {
+                    await Config.LogFunction("[Chat Client] Live update thread failed to stop after 5 seconds");
+                    _liveUpdateThread = null;
+                }
+            }
+        }
+        else {
+            await Config.LogFunction("[Chat Client] Live update thread is not running");
+        }
+        await Config.LogFunction("[Chat Client] Disconnect Success");
     }
 
     public Task<Message> SendMessage(string msg) {

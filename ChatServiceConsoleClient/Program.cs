@@ -22,4 +22,3 @@ while (true) {
     await client.SendMessage("X=" + x++);
     await Task.Delay(2000);
 }
-Thread.Sleep(-1);

@@ -1,7 +1,7 @@
 namespace ChatServiceGTKClient;
 
 public static class Commands {
-    private static readonly Dictionary<string, string> emoticons = new Dictionary<string, string> {
+    private static readonly Dictionary<string, string> EmoticonsDictionary = new() {
         {"shrug", "¯\\_(ツ)_/¯"},
         {"lenny", "( ͡° ͜ʖ ͡°)"},
         {"flip", "(╯°□°)╯︵"},
@@ -34,7 +34,7 @@ public static class Commands {
 
     public static string Emoticons(string text) {
         // replace all emoticons in text
-        return emoticons
+        return EmoticonsDictionary
             .Aggregate(text, (current, emoticon) => 
                 current.Replace("#" + emoticon.Key, emoticon.Value));
     }

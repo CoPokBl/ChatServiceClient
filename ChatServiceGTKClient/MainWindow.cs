@@ -11,7 +11,7 @@ internal class MainWindow : Window {
 
     private const string TitleStart = "Chat Client";
     private const string CheckMark = "<span foreground=\"green\" style=\"italic\" size=\"larger\">✓</span>";
-    private const string DefaultMainServer = "chatservice.zaneharrison.com:80";  // This is an alias of Serble's server that is unblocked at all tested schools
+    private const string DefaultMainServer = "https://chatservice.zaneharrison.com";  // This is an alias of Serble's server that is unblocked at all tested schools
     private const string DefaultLiveUpdateServer = "chatservice.zaneharrison.com:9435";  // This is an alias of Serble's server that is unblocked at all tested schools
 
     // NAMES CANNOT BE CHANGED BECAUSE THEY ARE USED BY GTK TO FIND THE OBJECTS
@@ -177,59 +177,66 @@ internal class MainWindow : Window {
         }
     }
 
+    private readonly object _messageLabelCreationLock = new();
     private void CreateMessageLabel(Message? previousMessage, string creator, string message, DateTime time, string id, bool trusted, bool grey = false) {
-
-        if (_messages.Exists(m => m.MessageId == id) && grey) {
-            Console.WriteLine("Message already exists! Skipping creation");
-            return;
-        }
+        lock (_messageLabelCreationLock) {
+            if (_messages.Exists(m => m.MessageId == id) && grey) {
+                Console.WriteLine("Message already exists! Skipping creation");
+                return;
+            }
         
-        // Combine Messages
-        // if creator name is the same, and was sent in the same minute, combine messages
-        bool combine = previousMessage != null && previousMessage.CreatorName == creator &&
-                       time - DateTime.FromBinary(previousMessage.CreatedAt).ToLocalTime() < TimeSpan.FromMinutes(1);
+            // Combine Messages
+            // if creator name is the same, and was sent in the same minute, combine messages
+            bool combine = previousMessage != null && previousMessage.CreatorName == creator &&
+                           time - DateTime.FromBinary(previousMessage.CreatedAt).ToLocalTime() < TimeSpan.FromMinutes(1);
 
-        EventBox box = new();
-        box.ButtonPressEvent += (_, args) => {
-            // only allow right clicks
-            if (args.Event.Button != 3) return;
-            _clickedMessageId = id;
-            messageContextMenu.Children[1].Sensitive = !_client!.TrustedUsers.IsMessageFromTrustedUser(GetMessageFromId(id));
-            messageContextMenu.Popup();
-        };
+            EventBox box = new();
+            box.ButtonPressEvent += (_, args) => {
+                // only allow right clicks
+                if (args.Event.Button != 3) return;
+                _clickedMessageId = id;
+                messageContextMenu.Children[1].Sensitive = !_client!.TrustedUsers.IsMessageFromTrustedUser(GetMessageFromId(id));
+                messageContextMenu.Popup();
+            };
 
-        Label label = new("");
-        label.Justify = Justification.Left;
-        label.Xpad = 10;
-        label.UseMarkup = true;
-        label.Xalign = 0;
-        label.LineWrap = true;
-        label.LineWrapMode = WrapMode.WordChar;
+            Label label = new("");
+            label.Justify = Justification.Left;
+            label.Xpad = 10;
+            label.UseMarkup = true;
+            label.Xalign = 0;
+            label.LineWrap = true;
+            label.LineWrapMode = WrapMode.WordChar;
 
-        if (combine) {
-            label.Markup = message;
-        }
-        else {
-            label.Markup = trusted ? 
-                $"<b>{creator}</b> {CheckMark} - <small>{time}</small>\n{message}" : 
-                $"<b>{creator}</b> - <small>{time}</small>\n{message}";
+            if (combine) {
+                label.Markup = message;
+            }
+            else {
+                label.Markup = trusted ? 
+                    $"<b>{creator}</b> {CheckMark} - <small>{time}</small>\n{message}" : 
+                    $"<b>{creator}</b> - <small>{time}</small>\n{message}";
 
-            label.MarginTop = 10;
-        }
+                label.MarginTop = 10;
+            }
         
-        if (grey) {
-            label.Opacity = 0.7;
-            _greyMessages.Add(id, label);
-        }
+            if (grey) {
+                label.Opacity = 0.7;
+                _greyMessages.Add(id, label);
+            }
 
-        box.Add(label);
-        messagesBox.Add(box);
+            box.Add(label);
+            messagesBox.Add(box);
         
-        box.Show();
-        label.Show();
+            box.Show();
+            label.Show();
+        }
     }
 
     private async void Init() {
+        if (_client != null) {
+            await _client.Disconnect();
+            _client = null;
+        }
+        
         string ip = serverIPEntry.Text;
         if (string.IsNullOrEmpty(ip)) {
             ip = DefaultMainServer;
@@ -272,13 +279,15 @@ internal class MainWindow : Window {
 
         if (!connectTest) {
             connectButton.Label = "Connection Failed.";
+            messageEntry.Sensitive = false;  // These need to be here for when user reconnects but it fails
+            sendButton.Sensitive = false;
             return;
         }
 
         connectButton.Label = "Reconnect";
         messageEntry.Sensitive = true;
         sendButton.Sensitive = true;
-            
+        
         _connected = true;
         Console.WriteLine("Connected!");
 
@@ -316,7 +325,7 @@ internal class MainWindow : Window {
                 message.Text);
             _messages.Add(message);
             
-            if (message.CreatorName == _client.Username) {
+            if (message.WasSentByClient(_client)) {
                 // try to find the message in greyMessages and make that have full opacity
                 if (_greyMessages.TryGetValue(message.MessageId, out Widget? label)) {
                     Console.WriteLine("Found grey message with id: " + message.MessageId);
